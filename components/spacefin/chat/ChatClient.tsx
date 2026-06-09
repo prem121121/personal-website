@@ -6,6 +6,20 @@ import SqlBlock from './SqlBlock'
 import ChatChart from './ChatChart'
 import type { UIMessage } from 'ai'
 
+function useSafeChat(transport: DefaultChatTransport) {
+  const [chatError, setChatError] = useState<string | null>(null)
+  const chat = useChat({ transport })
+  async function safeSend(text: string) {
+    setChatError(null)
+    try {
+      await chat.sendMessage({ text })
+    } catch (err) {
+      setChatError(String(err))
+    }
+  }
+  return { ...chat, safeSend, chatError }
+}
+
 const SUGGESTED = [
   'What is the delinquency trend for 2023?',
   'Which product type has the highest balance?',
@@ -19,9 +33,9 @@ function isLoading(status: string) {
 
 export default function ChatClient({ userName }: { userName: string }) {
   const [input, setInput] = useState('')
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/spacefin/chat' }),
-  })
+  const { messages, safeSend, status, chatError } = useSafeChat(
+    new DefaultChatTransport({ api: '/api/spacefin/chat' })
+  )
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,7 +46,7 @@ export default function ChatClient({ userName }: { userName: string }) {
     const text = input.trim()
     if (!text || isLoading(status)) return
     setInput('')
-    await sendMessage({ text })
+    await safeSend(text)
   }
 
   function renderMessage(msg: UIMessage) {
@@ -113,7 +127,7 @@ export default function ChatClient({ userName }: { userName: string }) {
                   key={s}
                   onClick={async () => {
                     setInput('')
-                    await sendMessage({ text: s })
+                    await safeSend(s)
                   }}
                   className="text-left rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-300 hover:border-emerald-500/50 hover:text-white transition-colors"
                 >
@@ -127,6 +141,14 @@ export default function ChatClient({ userName }: { userName: string }) {
         <div className="mx-auto max-w-3xl space-y-6">
           {messages.map(renderMessage)}
         </div>
+
+        {chatError && (
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              Error: {chatError}
+            </div>
+          </div>
+        )}
 
         {isLoading(status) && (
           <div className="mx-auto max-w-3xl">

@@ -10,8 +10,22 @@ export const maxDuration = 60
 const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
-  const modelMessages = await convertToModelMessages(messages)
+  let messages
+  try {
+    const body = await req.json()
+    messages = body.messages
+  } catch (err) {
+    console.error('[chat] failed to parse request body:', err)
+    return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400 })
+  }
+
+  let modelMessages
+  try {
+    modelMessages = await convertToModelMessages(messages)
+  } catch (err) {
+    console.error('[chat] convertToModelMessages failed:', err)
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500 })
+  }
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-6'),
