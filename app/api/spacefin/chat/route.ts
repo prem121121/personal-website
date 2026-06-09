@@ -4,6 +4,9 @@ import { z } from 'zod'
 import { runSql } from '@/lib/tools/runSql'
 import { SPACEFIN_SYSTEM_PROMPT } from '@/lib/domains/spacefin'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
 const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: Request) {

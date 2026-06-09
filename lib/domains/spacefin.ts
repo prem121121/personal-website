@@ -24,7 +24,7 @@ campaign_sk, campaign_id, campaign_name, channel, start_date, end_date, budget_u
 date_sk, date_key (DATE), month_date (DATE, first day of month), year, quarter, month, month_name
 
 ### fact_loan_performance
-loan_performance_sk, year_month (DATE), loan_id, customer_id, product_id, branch_id, officer_id, current_balance, scheduled_payment, amount_paid, days_past_due, delinquency_bucket (Current/30-59/60-89/90+/Charged-Off), is_charged_off (BOOL), risk_score, months_on_book, defaulted_next_3m (BOOL), loan_sk, customer_sk, date_sk
+loan_performance_sk, year_month (DATE), loan_id, customer_id, product_id, branch_id, officer_id, current_balance, scheduled_payment, amount_paid, days_past_due, delinquency_bucket (current/30/60/90/120+/charged_off), is_charged_off (BOOL), risk_score, months_on_book, defaulted_next_3m (BOOL), loan_sk, customer_sk, date_sk
 
 ### fact_transactions
 transaction_sk, year_month (DATE), account_id, customer_id, transaction_count, total_debits, total_credits, total_fees_charged, atm_withdrawals, online_payments, direct_deposits, account_sk, customer_sk, date_sk

@@ -87,10 +87,10 @@ export async function GET(req: NextRequest) {
     runQuery<{ month: string; current_pct: number; overdue_30: number; overdue_60: number; overdue_90: number }>(`
       SELECT
         FORMAT_DATE('%Y-%m', lp.year_month) AS month,
-        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = 'Current') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS current_pct,
-        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = '30-59') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_30,
-        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = '60-89') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_60,
-        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = '90+') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_90
+        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = 'current') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS current_pct,
+        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = '30') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_30,
+        CAST(COALESCE(COUNTIF(lp.delinquency_bucket = '60') * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_60,
+        CAST(COALESCE((COUNTIF(lp.delinquency_bucket = '90') + COUNTIF(lp.delinquency_bucket = '120+')) * 100.0 / NULLIF(COUNT(*), 0), 0) AS FLOAT64) AS overdue_90
       FROM ${tbl('fact_loan_performance')} lp
       LEFT JOIN ${tbl('dim_customer')} dc ON lp.customer_id = dc.customer_id AND dc.is_current = true
       WHERE 1=1
