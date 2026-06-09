@@ -14,11 +14,13 @@ export async function GET(req: NextRequest) {
   const region = searchParams.get('region') ?? 'all'
   const productType = searchParams.get('productType') ?? 'all'
 
-  const monthFilter = period === 'all' ? '' : `AND b.year_month >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL ${period} MONTH)`
+  const maxDate = `(SELECT MAX(year_month) FROM ${tbl('fact_account_balances')})`
+  const maxLoanDate = `(SELECT MAX(year_month) FROM ${tbl('fact_loan_performance')})`
+  const monthFilter = period === 'all' ? '' : `AND b.year_month >= DATE_SUB(${maxDate}, INTERVAL ${period} MONTH)`
   const regionFilter = region !== 'all' ? `AND c.region = '${region}'` : ''
   const productFilter = productType !== 'all' ? `AND b.product_type = '${productType}'` : ''
 
-  const loanMonthFilter = period === 'all' ? '' : `AND lp.year_month >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL ${period} MONTH)`
+  const loanMonthFilter = period === 'all' ? '' : `AND lp.year_month >= DATE_SUB(${maxLoanDate}, INTERVAL ${period} MONTH)`
   const loanRegionFilter = region !== 'all' ? `AND dc.region = '${region}'` : ''
 
   const [kpis, balanceTrend, delinquencyTrend, productMix, campaignPerf] = await Promise.all([
@@ -113,23 +115,23 @@ export async function GET(req: NextRequest) {
       ORDER BY balance DESC
     `),
 
-    // Campaign performance (last 5 campaigns by total deposits attracted)
-    runQuery<{ campaign_name: string; deposits: number; conversions: number; cpa: number }>(`
+    // Campaign performance (top campaigns by ROI)
+    runQuery<{ campaign_name: string; roi: number; new_accounts: number; cpa: number }>(`
       SELECT
         dc.campaign_name,
-        CAST(COALESCE(SUM(cp.total_deposits_attracted), 0) AS FLOAT64) AS deposits,
-        COALESCE(SUM(cp.conversions), 0) AS conversions,
+        CAST(COALESCE(AVG(cp.roi), 0) AS FLOAT64) AS roi,
+        COALESCE(SUM(cp.new_accounts), 0) AS new_accounts,
         CAST(COALESCE(AVG(cp.cost_per_acquisition), 0) AS FLOAT64) AS cpa
       FROM ${tbl('fact_campaign_performance')} cp
       JOIN ${tbl('dim_campaign')} dc ON cp.campaign_id = dc.campaign_id
       GROUP BY dc.campaign_name
-      ORDER BY deposits DESC
+      ORDER BY roi DESC
       LIMIT 8
     `),
   ])
 
   return NextResponse.json(
-    { kpis: kpis[0], balanceTrend, delinquencyTrend, productMix, campaignPerf },
+    { kpis: kpis[0] ?? {}, balanceTrend, delinquencyTrend, productMix, campaignPerf },
     { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } }
   )
 }

@@ -18,7 +18,7 @@ account_sk, account_id, customer_id, product_id, product_type, product_category 
 branch_sk, branch_id, branch_name, city, state, region, branch_type
 
 ### dim_campaign
-campaign_sk, campaign_id, campaign_name, campaign_type, channel, start_date, end_date, target_segment, budget
+campaign_sk, campaign_id, campaign_name, channel, start_date, end_date, budget_usd, target_segment, product_promoted, objective
 
 ### dim_date
 date_sk, date_key (DATE), month_date (DATE, first day of month), year, quarter, month, month_name
@@ -33,7 +33,7 @@ transaction_sk, year_month (DATE), account_id, customer_id, transaction_count, t
 balance_sk, year_month (DATE), account_id, customer_id, product_id, product_type, branch_id, end_of_month_balance, avg_daily_balance, interest_rate, interest_accrued, is_active (BOOL), account_sk, customer_sk, date_sk
 
 ### fact_campaign_performance
-campaign_performance_sk, year_month (DATE), campaign_id, new_accounts_opened, total_deposits_attracted, leads_generated, conversions, cost_per_acquisition, campaign_sk, date_sk
+campaign_performance_sk, year_month (DATE), campaign_id, spend_usd, impressions, clicks, applications, approvals, new_accounts, attributed_balances, cost_per_acquisition, roi, campaign_sk, date_sk
 
 ### fact_card_activity
 card_activity_sk, year_month (DATE), account_id, customer_id, purchase_amount, cash_advance_amount, payment_amount, outstanding_balance, credit_limit, utilization_rate, account_sk, customer_sk, date_sk

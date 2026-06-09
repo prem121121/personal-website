@@ -12,7 +12,7 @@ interface DashboardData {
   balanceTrend: { month: string; deposits: number; savings: number; cd: number }[]
   delinquencyTrend: { month: string; overdue_30: number; overdue_60: number; overdue_90: number }[]
   productMix: { product_type: string; balance: number; account_count: number }[]
-  campaignPerf: { campaign_name: string; deposits: number; conversions: number }[]
+  campaignPerf: { campaign_name: string; roi: number; new_accounts: number }[]
 }
 
 const PERIODS = [{ value: '12', label: '12 Months' }, { value: '24', label: '24 Months' }, { value: '36', label: '36 Months' }, { value: 'all', label: 'All Time' }]
