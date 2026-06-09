@@ -1,24 +1,10 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import SqlBlock from './SqlBlock'
 import ChatChart from './ChatChart'
 import type { UIMessage } from 'ai'
-
-function useSafeChat(transport: DefaultChatTransport) {
-  const [chatError, setChatError] = useState<string | null>(null)
-  const chat = useChat({ transport })
-  async function safeSend(text: string) {
-    setChatError(null)
-    try {
-      await chat.sendMessage({ text })
-    } catch (err) {
-      setChatError(String(err))
-    }
-  }
-  return { ...chat, safeSend, chatError }
-}
 
 const SUGGESTED = [
   'What is the delinquency trend for 2023?',
@@ -33,14 +19,24 @@ function isLoading(status: string) {
 
 export default function ChatClient({ userName }: { userName: string }) {
   const [input, setInput] = useState('')
-  const { messages, safeSend, status, chatError } = useSafeChat(
-    new DefaultChatTransport({ api: '/api/spacefin/chat' })
-  )
+  const [chatError, setChatError] = useState<string | null>(null)
+  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/spacefin/chat' }), [])
+  const { messages, sendMessage, status } = useChat({ transport })
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  async function safeSend(text: string) {
+    setChatError(null)
+    try {
+      await sendMessage({ text })
+    } catch (err) {
+      console.error('[chat] sendMessage error:', err)
+      setChatError(String(err))
+    }
+  }
 
   async function submit() {
     const text = input.trim()
@@ -51,7 +47,7 @@ export default function ChatClient({ userName }: { userName: string }) {
 
   function renderMessage(msg: UIMessage) {
     if (msg.role === 'user') {
-      const textPart = msg.parts.find(p => p.type === 'text')
+      const textPart = msg.parts?.find(p => p.type === 'text')
       const text = textPart && 'text' in textPart ? textPart.text : ''
       return (
         <div key={msg.id} className="flex justify-end">
@@ -66,7 +62,7 @@ export default function ChatClient({ userName }: { userName: string }) {
       return (
         <div key={msg.id} className="flex justify-start">
           <div className="max-w-[95%] space-y-2">
-            {msg.parts.map((part, i) => {
+            {(msg.parts ?? []).map((part, i) => {
               if (part.type === 'text') {
                 return (
                   <div key={i} className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
@@ -76,14 +72,15 @@ export default function ChatClient({ userName }: { userName: string }) {
               }
 
               if (part.type === 'tool-run_sql') {
-                const sql = (part.input as { sql: string }).sql
+                const input = part.input as { sql?: string } | undefined
+                const sql = input?.sql ?? ''
                 const isRunning = part.state === 'input-streaming' || part.state === 'input-available'
                 const isError = part.state === 'output-error'
                 const output = part.state === 'output-available' ? (part.output as { rowCount?: number }) : undefined
                 return (
                   <SqlBlock
                     key={i}
-                    sql={sql ?? ''}
+                    sql={sql}
                     status={isRunning ? 'running' : isError ? 'error' : 'success'}
                     rowCount={output?.rowCount}
                   />
@@ -125,10 +122,7 @@ export default function ChatClient({ userName }: { userName: string }) {
               {SUGGESTED.map(s => (
                 <button
                   key={s}
-                  onClick={async () => {
-                    setInput('')
-                    await safeSend(s)
-                  }}
+                  onClick={() => safeSend(s)}
                   className="text-left rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-300 hover:border-emerald-500/50 hover:text-white transition-colors"
                 >
                   {s}
@@ -144,7 +138,7 @@ export default function ChatClient({ userName }: { userName: string }) {
 
         {chatError && (
           <div className="mx-auto max-w-3xl">
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 break-words">
               Error: {chatError}
             </div>
           </div>
