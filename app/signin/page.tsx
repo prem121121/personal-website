@@ -1,4 +1,5 @@
 import { signIn } from '@/auth'
+import { AuthError } from 'next-auth'
 import { redirect } from 'next/navigation'
 
 export const metadata = { title: 'Sign In — Space Financial AI Analyst' }
@@ -23,8 +24,11 @@ export default function SignInPage({ searchParams }: { searchParams: Record<stri
               const password = formData.get('password') as string
               try {
                 await signIn('credentials', { username, password, redirectTo: callbackUrl })
-              } catch {
-                redirect(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}&error=invalid`)
+              } catch (err) {
+                if (err instanceof AuthError) {
+                  redirect(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}&error=invalid`)
+                }
+                throw err
               }
             }}
             className="space-y-4"
